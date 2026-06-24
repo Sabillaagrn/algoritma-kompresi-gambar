@@ -94,7 +94,7 @@ st.markdown(
 st.markdown(
     f"""
     <div class="hero">
-      <h1>{SVG_SPARKLES} Studi Komparasi Kompresi Gambar JPEG</h1>
+      <h1>{SVG_SPARKLES} Studi Komparasi Kompresi Gambar JPG/JPEG</h1>
       <p>Analisis dan bandingkan tiga algoritma kompresi citra terhadap ukuran file dan
       kualitas visual (PSNR). Unggah gambar Anda untuk melihat hasilnya.</p>
       <div>
