@@ -10,7 +10,7 @@ from PIL import Image
 from compression_lib import ALGORITMA
 from utils import size_kb, compression_ratio, space_savings, psnr
 
-# Konfigurasi Halaman (Hapus page_icon emoji)
+# Konfigurasi Halaman
 st.set_page_config(
     page_title="Komparasi Kompresi JPEG",
     layout="wide",
@@ -18,7 +18,6 @@ st.set_page_config(
 )
 
 # ---- Kumpulan Ikon SVG ------------------------------------------------------
-# Menggunakan gaya ikon outline yang minimalis dan profesional
 SVG_SPARKLES = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>'
 SVG_BOX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'
 SVG_BLOCKS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>'
@@ -28,7 +27,7 @@ SVG_RULER = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke=
 SVG_DISK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
 SVG_IMAGE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
 
-# ---- Gaya Tampilan (CSS Modern) ---------------------------------------------
+# ---- Gaya Tampilan (CSS Modern & Adaptif) -----------------------------------
 st.markdown(
     """
     <style>
@@ -37,12 +36,12 @@ st.markdown(
           font-family: 'Plus Jakarta Sans', sans-serif;
       }
       
-      /* Mengatur keselarasan ikon SVG dengan teks */
       .svg-icon {
           vertical-align: text-bottom;
           margin-right: 6px;
       }
 
+      /* Hero section tetap menggunakan warna gelap sebagai aksen */
       .hero {
         background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
         color: #ffffff; 
@@ -68,18 +67,21 @@ st.markdown(
         margin: 0.3rem;
       }
 
-      .filename { font-weight: 600; font-size: 1.15rem; color: #0f172a; display: flex; align-items: center;}
-      .muted { color:#64748b; font-size:0.9rem; margin-bottom: 0.2rem; display: flex; align-items: center;}
-      .size-orig { font-size: 1rem; color: #0f172a; font-weight: 600;}
+      /* Teks menggunakan var(--text-color) agar adaptif di Light/Dark Mode */
+      .filename { font-weight: 600; font-size: 1.15rem; color: var(--text-color); display: flex; align-items: center;}
+      .muted { color: var(--text-color); opacity: 0.7; font-size:0.9rem; margin-bottom: 0.2rem; display: flex; align-items: center;}
+      .size-orig { font-size: 1rem; color: var(--text-color); font-weight: 600;}
       
+      /* Menggunakan border semi-transparan untuk gambar */
       [data-testid="stImage"] img {
           border-radius: 8px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid rgba(128, 128, 128, 0.2);
       }
       
+      /* Metric container menyesuaikan warna background tema Streamlit */
       [data-testid="metric-container"] {
-          background-color: #f8fafc;
-          border: 1px solid #e2e8f0;
+          background-color: var(--secondary-background-color);
+          border: 1px solid rgba(128, 128, 128, 0.2);
           padding: 1rem;
           border-radius: 10px;
       }
@@ -211,13 +213,14 @@ with col_a:
     with st.container(border=True):
         st.markdown("**Rata-rata Ukuran per Algoritma (KB)**")
         rata = {f"Algo {i}": df[f"Algo {i} (KB)"].mean() for i in (1, 2, 3)}
-        st.bar_chart(pd.Series(rata, name="KB"), color="#334155")
+        # Menghapus argumen color supaya bar_chart menggunakan warna tema bawaan Streamlit
+        st.bar_chart(pd.Series(rata, name="KB"))
 
 with col_b:
     with st.container(border=True):
         st.markdown("**Rata-rata Penghematan per Algoritma (%)**")
         rata_ss = {f"Algo {i}": df[f"Algo {i} Reduksi (%)"].mean() for i in (1, 2, 3)}
-        st.bar_chart(pd.Series(rata_ss, name="Reduksi (%)"), color="#64748b")
+        st.bar_chart(pd.Series(rata_ss, name="Reduksi (%)"))
 
 col1, col2 = st.columns([1, 3])
 with col1:
