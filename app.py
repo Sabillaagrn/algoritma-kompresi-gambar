@@ -1,14 +1,6 @@
 """
 app.py - Aplikasi utama (Streamlit)
 Studi Komparasi Algoritma Kompresi Gambar JPEG
-
-Membandingkan 3 algoritma kompresi pada file gambar JPEG:
-  Algo 1 : Vector Quantization (VQ)
-  Algo 2 : Block Truncation Coding (BTC)
-  Algo 3 : Progressive JPEG Encoding
-
-Menampilkan gambar beserta ukuran file sebelum dan sesudah kompresi,
-serta persentase pengurangan ukuran, compression ratio, dan PSNR.
 """
 
 import pandas as pd
@@ -18,78 +10,118 @@ from PIL import Image
 from compression_lib import ALGORITMA
 from utils import size_kb, compression_ratio, space_savings, psnr
 
+# Konfigurasi Halaman (Hapus page_icon emoji)
 st.set_page_config(
     page_title="Komparasi Kompresi JPEG",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# ---- Gaya tampilan ----------------------------------------------------------
+# ---- Kumpulan Ikon SVG ------------------------------------------------------
+# Menggunakan gaya ikon outline yang minimalis dan profesional
+SVG_SPARKLES = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>'
+SVG_BOX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'
+SVG_BLOCKS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>'
+SVG_ZAP = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'
+SVG_FILE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>'
+SVG_RULER = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
+SVG_DISK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
+SVG_IMAGE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
+
+# ---- Gaya Tampilan (CSS Modern) ---------------------------------------------
 st.markdown(
     """
     <style>
-      .block-container { padding-top: 2.2rem; max-width: 1200px; }
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+      html, body, [class*="css"] {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      
+      /* Mengatur keselarasan ikon SVG dengan teks */
+      .svg-icon {
+          vertical-align: text-bottom;
+          margin-right: 6px;
+      }
+
       .hero {
-        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-        color: #ffffff; padding: 2rem 2.4rem; border-radius: 16px;
-        margin-bottom: 1.6rem;
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: #ffffff; 
+        padding: 3rem 2.5rem; 
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        text-align: center;
       }
-      .hero h1 { color:#fff; font-size: 1.9rem; margin: 0 0 .4rem 0; }
-      .hero p { color:#dbeafe; font-size: 1rem; margin: 0; max-width: 760px; }
+      .hero h1 { color:#fff; font-size: 2.2rem; font-weight: 700; margin: 0 0 0.8rem 0; display: flex; align-items: center; justify-content: center;}
+      .hero p { color:#cbd5e1; font-size: 1.1rem; margin: 0 auto 1.5rem auto; max-width: 800px; line-height: 1.6;}
+      
       .algo-pill {
-        display:inline-block; background: rgba(255,255,255,.15);
-        color:#fff; padding:.3rem .8rem; border-radius:999px;
-        font-size:.82rem; margin:.5rem .4rem 0 0;
+        display: inline-flex; 
+        align-items: center;
+        background: rgba(255,255,255, 0.1);
+        border: 1px solid rgba(255,255,255, 0.2);
+        color:#fff; 
+        padding: 0.5rem 1.2rem; 
+        border-radius: 50px;
+        font-size: 0.9rem; 
+        font-weight: 500;
+        margin: 0.3rem;
       }
-      .card {
-        background:#ffffff; border:1px solid #e5e7eb; border-radius:14px;
-        padding:1.1rem 1.2rem; box-shadow:0 1px 3px rgba(0,0,0,.05);
+
+      .filename { font-weight: 600; font-size: 1.15rem; color: #0f172a; display: flex; align-items: center;}
+      .muted { color:#64748b; font-size:0.9rem; margin-bottom: 0.2rem; display: flex; align-items: center;}
+      .size-orig { font-size: 1rem; color: #0f172a; font-weight: 600;}
+      
+      [data-testid="stImage"] img {
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
       }
-      .filename { font-weight:700; font-size:1.05rem; color:#111827; }
-      .muted { color:#6b7280; font-size:.85rem; }
-      .size-orig { font-size:.9rem; color:#374151; }
-      .badge-down {
-        display:inline-block; background:#dcfce7; color:#166534;
-        padding:.15rem .55rem; border-radius:8px; font-weight:600; font-size:.85rem;
+      
+      [data-testid="metric-container"] {
+          background-color: #f8fafc;
+          border: 1px solid #e2e8f0;
+          padding: 1rem;
+          border-radius: 10px;
       }
-      .badge-up {
-        display:inline-block; background:#fee2e2; color:#991b1b;
-        padding:.15rem .55rem; border-radius:8px; font-weight:600; font-size:.85rem;
-      }
-      .stDownloadButton button { border-radius:10px; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
+# ---- Bagian Header (Hero) ---------------------------------------------------
 st.markdown(
-    """
+    f"""
     <div class="hero">
-      <h1>Studi Komparasi Algoritma Kompresi Gambar JPEG</h1>
-      <p>Bandingkan tiga algoritma kompresi citra terhadap ukuran file dan
-      kualitas visual (PSNR). Unggah satu atau beberapa gambar JPEG untuk memulai.</p>
-      <span class="algo-pill">Vector Quantization</span>
-      <span class="algo-pill">Block Truncation Coding</span>
-      <span class="algo-pill">Progressive JPEG</span>
+      <h1>{SVG_SPARKLES} Studi Komparasi Kompresi Gambar JPEG</h1>
+      <p>Analisis dan bandingkan tiga algoritma kompresi citra terhadap ukuran file dan
+      kualitas visual (PSNR). Unggah gambar Anda untuk melihat hasilnya.</p>
+      <div>
+          <span class="algo-pill">{SVG_BOX} Vector Quantization</span>
+          <span class="algo-pill">{SVG_BLOCKS} Block Truncation</span>
+          <span class="algo-pill">{SVG_ZAP} Progressive JPEG</span>
+      </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
+# ---- Area Unggah File -------------------------------------------------------
+st.markdown("### Mulai di sini")
 files = st.file_uploader(
-    "Unggah gambar JPEG (.jpg / .jpeg)",
+    "Pilih satu atau beberapa gambar (.jpg / .jpeg)",
     type=["jpg", "jpeg"],
     accept_multiple_files=True,
+    help="Tarik dan letakkan file gambar ke area ini."
 )
 
 if not files:
-    st.info("Belum ada file yang diunggah. Pilih satu atau beberapa gambar JPEG di atas.")
+    st.info("Belum ada file yang diunggah. Silakan pilih gambar di atas untuk memulai perbandingan.")
     st.stop()
 
 # ---- Proses tiap file -------------------------------------------------------
 ringkasan = []
 
-st.markdown(f"**{len(files)} file** siap diproses.")
+st.success(f"**{len(files)} file** siap diproses.")
 st.write("")
 
 for idx, f in enumerate(files):
@@ -97,27 +129,27 @@ for idx, f in enumerate(files):
     img = Image.open(f)
     kb_asli = size_kb(data_asli)
 
-    with st.container():
+    with st.container(border=True):
         st.markdown(
-            f'<span class="filename">{f.name}</span> '
-            f'<span class="muted">&nbsp;|&nbsp; {img.width} x {img.height} px '
-            f'&nbsp;|&nbsp; ukuran asli {kb_asli:.1f} KB</span>',
+            f'<div class="filename">{SVG_FILE} {f.name}</div> '
+            f'<div class="muted" style="margin-top: 8px;">{SVG_RULER} {img.width} x {img.height} px '
+            f'&nbsp;&nbsp;|&nbsp;&nbsp; {SVG_DISK} Ukuran asli: {kb_asli:.1f} KB</div>',
             unsafe_allow_html=True,
         )
+        st.write("")
 
         kolom = st.columns(len(ALGORITMA) + 1)
 
-        # Gambar asli
+        # 1. Kolom Gambar Asli
         with kolom[0]:
             st.image(img, use_container_width=True)
-            st.markdown('<p class="muted">Asli (sebelum kompresi)</p>',
-                        unsafe_allow_html=True)
-            st.markdown(f'<p class="size-orig">{kb_asli:.1f} KB</p>',
-                        unsafe_allow_html=True)
+            st.markdown(f'<p class="muted">{SVG_IMAGE} Asli (Sebelum Kompresi)</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="size-orig">{kb_asli:.1f} KB</p>', unsafe_allow_html=True)
 
         baris = {"File": f.name, "Asli (KB)": round(kb_asli, 1)}
         hasil_kompresi = []
 
+        # 2. Kolom Hasil Algoritma
         for i, (nama, fungsi, ext) in enumerate(ALGORITMA, start=1):
             data = fungsi(img)
             kb = size_kb(data)
@@ -128,58 +160,77 @@ for idx, f in enumerate(files):
 
             with kolom[i]:
                 st.image(data, use_container_width=True)
-                st.markdown(f'<p class="muted">{nama}</p>', unsafe_allow_html=True)
+                st.markdown(f'<p class="muted">{SVG_ZAP} {nama}</p>', unsafe_allow_html=True)
+                
                 st.metric(
-                    label="Ukuran",
+                    label="Ukuran Akhir",
                     value=f"{kb:.1f} KB",
-                    delta=f"{-ss:.1f}%",
-                    delta_color="inverse",
+                    delta=f"{ss:.1f}% hemat",
+                    delta_color="normal" if ss > 0 else "inverse",
                 )
+                
                 st.markdown(
-                    f'<p class="muted">Rasio {cr:.2f}x &nbsp;|&nbsp; '
-                    f'PSNR {"inf" if ps == float("inf") else f"{ps:.1f}"} dB</p>',
+                    f'<p class="muted" style="font-size: 0.85rem;">'
+                    f'Rasio: {cr:.2f}x <br> '
+                    f'PSNR: {"inf" if ps == float("inf") else f"{ps:.1f}"} dB</p>',
                     unsafe_allow_html=True,
                 )
+                
                 st.download_button(
-                    "Unduh hasil",
-                    data,
+                    label="Unduh",
+                    data=data,
                     file_name=f"algo{i}_{f.name.rsplit('.', 1)[0]}.{ext}",
                     key=f"dl_{idx}_{i}",
                     use_container_width=True,
+                    type="primary"
                 )
 
             baris[f"Algo {i} (KB)"] = round(kb, 1)
-            baris[f"Algo {i} reduksi (%)"] = round(ss, 1)
+            baris[f"Algo {i} Reduksi (%)"] = round(ss, 1)
 
         best = min(hasil_kompresi, key=lambda x: x[2])
-        baris["Best Algo"] = best[0]
+        baris["Pemenang"] = best[0]
         ringkasan.append(baris)
 
-    st.divider()
+# ---- Rekap & Komparasi ------------------------------------------------------
+st.write("---")
+st.markdown("### Ringkasan & Analisis Data")
 
-# ---- Rekap & komparasi ------------------------------------------------------
-st.subheader("Tabel Komparasi")
 df = pd.DataFrame(ringkasan)
-st.dataframe(df, use_container_width=True, hide_index=True)
+
+st.dataframe(
+    df, 
+    use_container_width=True, 
+    hide_index=True,
+)
+
+st.write("")
 
 col_a, col_b = st.columns(2)
 with col_a:
-    st.markdown("**Rata-rata ukuran per algoritma (KB)**")
-    rata = {f"Algo {i}": df[f"Algo {i} (KB)"].mean() for i in (1, 2, 3)}
-    st.bar_chart(pd.Series(rata, name="KB"))
+    with st.container(border=True):
+        st.markdown("**Rata-rata Ukuran per Algoritma (KB)**")
+        rata = {f"Algo {i}": df[f"Algo {i} (KB)"].mean() for i in (1, 2, 3)}
+        st.bar_chart(pd.Series(rata, name="KB"), color="#334155")
+
 with col_b:
-    st.markdown("**Rata-rata pengurangan per algoritma (%)**")
-    rata_ss = {f"Algo {i}": df[f"Algo {i} reduksi (%)"].mean() for i in (1, 2, 3)}
-    st.bar_chart(pd.Series(rata_ss, name="Pengurangan (%)"))
+    with st.container(border=True):
+        st.markdown("**Rata-rata Penghematan per Algoritma (%)**")
+        rata_ss = {f"Algo {i}": df[f"Algo {i} Reduksi (%)"].mean() for i in (1, 2, 3)}
+        st.bar_chart(pd.Series(rata_ss, name="Reduksi (%)"), color="#64748b")
 
-st.download_button(
-    "Unduh laporan CSV",
-    df.to_csv(index=False).encode(),
-    file_name="compression_results.csv",
-    mime="text/csv",
-)
+col1, col2 = st.columns([1, 3])
+with col1:
+    st.download_button(
+        label="Unduh Laporan (CSV)",
+        data=df.to_csv(index=False).encode(),
+        file_name="compression_results.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
 
-st.caption(
-    "Keterangan: Algo 1 = Vector Quantization, Algo 2 = Block Truncation Coding, "
-    "Algo 3 = Progressive JPEG. Best Algo dipilih berdasarkan ukuran file terkecil."
-)
+with col2:
+    st.caption(
+        "Keterangan: Algo 1 = Vector Quantization | Algo 2 = Block Truncation Coding | "
+        "Algo 3 = Progressive JPEG. Kolom 'Pemenang' dipilih otomatis berdasarkan ukuran file terkecil."
+    )
